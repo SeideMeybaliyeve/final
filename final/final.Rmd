@@ -1,0 +1,242 @@
+---
+title: "Kriket Maçları 1997-2005 Sezonları Analizi"
+author: 
+  - Saida Meybaliyeva[^1]
+bibliography: ../bibliography/biblio.bib
+csl: ../csl/apa-tr.csl
+header-includes:
+  - \usepackage{polyglossia}
+  - \setmainlanguage{turkish}
+  - \usepackage{booktabs}
+  - \usepackage{caption} 
+  - \captionsetup[table]{skip=10pt}
+output:
+  bookdown::pdf_document2:
+    fig_caption: yes
+    fig_height: 3
+    fig_width: 4
+    keep_tex: no
+    latex_engine: xelatex
+    number_sections: yes
+    toc: no
+geometry: margin=1in
+link-citations: yes
+urlcolor: blue
+fontsize: 12pt
+biblio-style: apalike
+abstract: |
+  Kriket, on birer kişilik iki takım arasında, sopa ve top yardımıyla, merkezinde 20 metre (22 yard) uzunluğunda dikdörtgen bir saha bulunan ovalimsi bir alanda oynanan takım sporudur. Dikdörtgen sahanın bir ucunda yer alan atıcı durumundaki takımın oyuncusu topu, vurucu konumundaki takım oyuncusunun bulunduğu diğer uca doğru fırlatarak vurucunun arkasında bulunan kale benzeri düzeneğe (wicket) değdirmeye, vurucu ise gelen bu topun wicket'a değmesini engellemek için elindeki sopa yardımıyla topa vurmaya çalışır. Başarılı bir vuruşun ardından atıcı takım oyuncuları topu yakalamaya çalışırken, sahada yer alan vurucu da karşısındaki wicket'a doğru koşar. 
+  Yaptığımız analizde kazanılan skorlar arasında anlamlı pozitif korelasyon olduğunu gördük. Normal olarak olması gereken gibi kaçırılan toplarla da skor arasında negatif korelasyon olduğunu bulduk. Zaman açısından yıllara göre oyunlardaki toplam skorun medyan değerine baktığımızda da gözeçarpan bir değişiklik olduğu söylenemez. 
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = FALSE, echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+<!-- ======================================================================= -->
+<!-- ============================== NOTLAR ================================= -->
+<!-- ======================================================================= -->
+[^1]: 20080742, [Github Repo](https://github.com/SeideMeybaliyeve/final.git)
+
+# Giriş
+
+Kriket 16'cı yüzyılda İngilterede çıkan ve oradan dünyaya yayılan bir takım oyunudur. Şuanda Türkiyede pek oynanılmasa da eski İngiliz sömürgesi olan ülkelerde(Hindistan,Pakistan,Bangladeş) yaygın olarak oynanılmakta ve popülerliğini korumaktadır. Ofansif taraf fırlattığı topla savunma yapan oyuncunun arkasındaki kaleyi hedef alır(*Bowlers*) ve savunma yapan kişi topu arkasındaki kaleye değdirmeyecek şekilde elindeki sopayla savunmak zorundadır(*Batsmen*). Her takımda 11 kişi bulunur, top eğer kaleye değmediyse savunan taraf topa, topu savuran tarafın oyuncuları ise kaleye doğru koşarlar.
+
+Analizde kullanılacak data **Github** üzerinden **Tidytuesday** reposundan alınmıştır. Data 16 sütun ve 1237 satırdan oluşmaktadır. **Takım1** ve **Takım2** oyuncu takımların ülkelerini aynı şekilde **skor1 ve skor2** uygun gelen skorları, **zaman** maçın oynandığı zaman durumunu, **wicket_team1 ve 2** kaleden kenara giden top sayısını(10 olması tüm topların kenara gittiği anlamına geliyor),**takımsaha1 ve takımsaha2** maçın hangi takım sahasında oynandığını,**kazanan** sütunu hangi takımın kazandığını,**series** maçın oynandığı turnuvanı, **player_of_match ve player_of_match_team** maçın oyuncusunu ve bu oyuncunun hangi takımda olduğunu, **toss ve toss_decision** sütünları yazı-turanı hangi takımın kazandığını ve neyi seçtiğini, **match_date** ise maçın oynanma zamanını gösteriyor.
+
+
+
+
+
+
+## Çalışmanın Amacı
+
+Çalışmada veride olan sezonlar için genel analiz yapmak amaçlanıyor. Genel olarak zaman içerisinde hangi takımların yükseldiğini, düştüğünü veya stabil oynadığını, sezonlar için en iyi oyuncu, ortalama skorlarda yıllara göre bir değişiklik olup olmadığı gözlemlenecektir. Maçı hangi takımın kazanacağına en çok etki eden etkenlerin hangi sütunlar olduğu da regresyon ve korelasyon analizi ile incelenecektir. Tabii ki, elimizde olan data kapsamlı bir regresyon analizi için yetersizdir, çünkü oyuncuların genel bilgileri olmadan bir tahmin yapmak pek olası değildir, ancak yine de tahminler oyuncuların durumlarının değişmediğine göre yapılacaktır.
+
+## Literatür 
+
+Genel olarak ülkemizde ve yakın ülkelerde pek çok bilinmese de, kriket oyunu 18'ci yy'dan beri daha da yaygınlaşmıştır ve popülerliğini korumaktadır. İngileterede 2'ci meşhur spor olsa da Amerikan futbolu sayılan rugby'den 2 kat ve baseball'dan 1.3 kat daha fazla popülerdir, 5 yetişkinden biri düzenli olarak kriket seyretmekte ve 10 yetişkinden biri oyunlarla alakalı yazılar okumaktadır[@lemmer2008]. Bu oyunun bu kadar çok popüler olmasına rağmen son 10 yıldır diğer sporlara nazaran daha çok araştırmalara konu olmaktadır.
+@amin2014cricket araştırmasında oyunlar incelendiğinde maç yerinin ve oynandığı turnuvanın kazanma oranına göre takımlar için farklılığa yol açtığı bulunmuştur. Araştırmamızda bu etkenlere diğer etkenler de katılacak şekilde analiz yapılacaktır. Bunlar önemli etken olsalar da takım oyuncularının skora katkısı tartışılmaz şekilde en yüksek olandır. Ancak yine oyuncular da bir çok özelliğe göre farklılık göstermektedir.
+Genel olarak oyuncuların eski performanslarına göre onların diğer oyunda hangi düzeyde iyi veya kötü oynayacağını tahmin edilirken öznel tam olarak anlamlı olmayan sonuçlarla karşılaşılıyor[@iyer2009prediction]. Top savurma konusunda bile bir oyuncu hedef konusunda iyi olurken, bir diğeri hıza göre en iyi olabiliyor, yani takım isteklerine ve pozisyonlara göre iyi oyuncular vardır tam olarak en iyi oyuncu diye bir kavram yoktur ki, bu da kriket sporununu heyecanlı kılmaktadır[@mukherjee2014quantifying]. @singh2015score araştırmasında kazanan takımı tahmin etmek için *lineer regresyon* kullanılmıştır. %91 güven düzeyinde kazanan takımın mevcüt skor ve verimizde bulunan **wicket team** sütunlarıyla orantılı olduğu bulunmuştur.
+Genel olarak bakıldığında bu özelliğin diğer popüler olan sporlarda da bulunuyor. Hatta bir çok spor bunu korumak için gerekli önlemler alıyor. Formula 1'i son yıllarda Mercedes takımının daha çok para harcayarak domine etmesinden dolayı federasyonun dominasyonu kırmak için harcanan paraya bir kota konulmasını bir örnek olarak vere biliriz. 
+
+# Veri 
+
+Tablo \ref{tab:ozet}'da göründüğü gibi maksimum skor 398 puan ve minimum ise 8 puandır. Skor 1 ortalamsı 233 puan standart sapması ise 56 puan olarak gözüküyor. Medyan değeri ise 237 ile ortalamaya oldukça yakın. Aynı şekilde skor 2 değişkeninde ortalama 200 ve yine medyan değeri 203 ile ortalama ve medyan değerleri bir-birine çok yakındır. Kenara giden toplara bakarsak, tabii ki, maksimum olabilecek maksimum sayı 10 ve minimumsa 0'dır. Aynı şekilde skorda olduğu gibi burda da ortalamalarla medyan değerleri yakındır. Ortalamada çok puan olmasına rağmen 1-ci takımlarda  kenara giden top ortalaması ve medyanı fazladır. Yani savunucular görevlerini yerine getirmektedirler. Kaleye giden topun da tahtaya isabet etmesi çok düşük ihtimaldir. Total skora bakacak olursak da yine en düşük skorlu maçta toplam 73, en yüksek skorlu maçta ise skorun 693 olduğunu görürüz. Total skor açısından da medyan değeri 441 puandır.
+
+```{r include=FALSE}
+library(tidyverse)
+library(dplyr)
+data <- read_csv('../data/matches.csv')
+data <- data[ , ! names(data) %in% c("match_id", "venue", 'ball_remaining', 'ground','ground_city', 'ground_country', 'margin', 'margin_type')] 
+colnames(data)[colnames(data) == "team1"] = "takım1"
+colnames(data)[colnames(data) == "team2"] = "takım2"
+colnames(data)[colnames(data) == "score_team1"] = "skor1"
+colnames(data)[colnames(data) == "score_team2"] = "skor2"
+colnames(data)[colnames(data) == "time_of_day"] = "zaman"
+colnames(data)[colnames(data) == "team1_away_or_home"] = "takımsaha1"
+colnames(data)[colnames(data) == "team2_home_away"] = "takımsaha2"
+
+colnames(data)[colnames(data) == "winner"] = "kazanan"
+
+data <- mutate(data, takımsaha1 = case_when(
+  takımsaha1 == 'away' ~ '0', 
+  TRUE   ~ takımsaha1 
+))
+data <- mutate(data, takımsaha2 = case_when(
+  takımsaha2 == 'away' ~ '0', 
+  TRUE   ~ takımsaha2 
+))
+
+data <- mutate(data, takımsaha1 = case_when(
+  takımsaha1 == 'home' ~ '1', 
+  TRUE   ~ takımsaha1 
+))
+data <- mutate(data, takımsaha2 = case_when(
+  takımsaha2 == 'home' ~ '1', 
+  TRUE   ~ takımsaha2 
+))
+
+
+# Türkiyede konu ile alakalı pek makale bulamadığım için literatür tartışması sadece ingiliz kaynaklı makalelerden yapılmıştır.
+
+```
+
+
+
+
+```{r, echo=FALSE}
+library(xtable) 
+# devtools::install_github("emraher/summarytools")
+library(summarytools)
+st_options(lang = "tr")
+```
+
+
+
+```{r results='asis', echo=FALSE}
+data <- data %>%
+  mutate(total_skor = skor1 + skor2)
+
+data$year <- sapply(strsplit(data$match_date, ",\\s*"), function(x) trimws(x[2]))
+
+data %>%
+  select("skor1", "skor2", "wickets_team1", "wickets_team2", "total_skor") %>% 
+  descr(stats = c("mean", "sd", "min", "med", "max"), transpose = TRUE) %>% 
+  xtable(caption = "Özet İstatistikler",
+         label = "tab:ozet",
+         align = c("l", "c", "c", "c", "c", "c")) %>% 
+  print(booktabs = TRUE, comment = FALSE, caption.placement = "top")
+```
+
+\newpage
+
+# Yöntem ve Veri Analizi
+
+Şekil \@ref(fig:plot)'de skor 1 değişkeninin neden daha fazla ortalamaya sahip olduğunu görüyoruz. Ekseriyette fark açılan oyunlarda kazanan takımın skoru skor 1 sütununda yer almaktadır. Sol üst köşenin boş olmasından ve sağ alt köşede daha çok nokta olmasından bunu anlaya biliriz. Skoru 400'e yakın olan maçlar da genellikle skor 1dedir. Regresyon doğrusunun aynı düzeyde devam etmemesi de yüksek olan skorların skor1'de yazılmasından kaynaklanmaktadır.
+
+```{r plot, echo=FALSE, fig.align='center', fig.cap='Skor Saçılım', fig.height=5, fig.width=8}
+data %>% 
+  ggplot(aes(x = skor1, y = skor2)) +
+  geom_point( colour = "black", shape = 3, size = 3) +
+  geom_smooth() +
+  scale_x_continuous("Skor 1") + 
+  scale_y_continuous("Skor 2")
+```
+
+Şekil \@ref(fig:plot1)'deki yoğunluk grafiğine bakarsak en fazla oranla maçların toplamda 380-520 skorla bittiğini göre biliriz. Dağılım sola doğru çarpık olarak gözüküyor. Oyunda sayı 200'den az ve 640'dan fazla skor olanlar genelin azını teşkil etmektedir. Dağılım normal dağılıma benziyor. Tablo \ref{tab:sha}'deki Shapiro testinden de toplam skorun normal olarak dağıldığını görüyoruz.
+
+```{r, echo=FALSE, results='asis'}
+library(kableExtra)
+data$total_skor <- as.numeric(as.character(data$total_skor))
+
+
+shapiro_result <- shapiro.test(data$total_skor)
+
+
+test_statistic <- shapiro_result$statistic
+p_value <- shapiro_result$p.value
+
+df <- data.frame(Test_İstatistikleri = test_statistic, P_Değeri = p_value)
+
+
+formatted_table <- kable(df, caption = "Shapiro-Wilk Normallik Testi") %>%
+  kable_styling()
+
+cat("\\label{tab:sha}\n")
+
+print(formatted_table)
+
+```
+
+
+
+
+
+
+
+
+```{r plot1, echo=FALSE, fig.align='center', fig.cap='Skor Histogramı', fig.height=5, fig.width=8}
+
+
+data %>%
+  ggplot(aes(x = total_skor)) +
+  geom_histogram(aes(y = ..density..),
+                 colour = "black", 
+                 fill = "white") +
+  geom_density(alpha = 0.5, 
+               fill = "#71f653") 
+
+```
+
+Şekil \@ref(fig:plot2)'da yıllar bazında en yüksek ortalama skorun verinin toplandığı en son yıla denk geldiğini görüyoruz. En düşük skorlu yıl 2003 yılına aittir. Genel olarak ortalama skorlar pek farklılaşmamakla birlikte yıllar bazında da önemli bir çizgi göremiyoruz.
+
+Tabii ki, kenara giden top sayısı arttıkça skor kazanmak da takım açısından zorlaşıyor. Skorla kaçırılan top sayı arasında korelasyona baktığımızda istatistiksel açıdan anlamlı korelasyon katsayısını -0.61 olarak buluyoruz. Yani bu iki değişken arasında ters yönlü bir ilişki vardır.
+
+```{r plot2, echo=FALSE, fig.align='center', fig.cap='Yıllara göre Ortalama Skorlar', fig.height=5, fig.width=8}
+
+data %>%
+  group_by(year) %>%
+  summarize(mean_total_score = mean(total_skor)) %>%
+  mutate(Year = fct_reorder(year, mean_total_score)) %>%
+  ggplot(aes(mean_total_score, Year, fill = mean_total_score)) +
+  geom_col() 
+
+```
+
+
+```{r, echo=FALSE, results='asis'}
+
+library("ggpubr")
+
+result1 <- cor.test(data$skor1, data$wickets_team1, method = "pearson")
+result2 <- cor.test(data$skor1, data$skor2, method = "pearson")
+
+
+df <- data.frame(
+  Değisken = c("skor1 vs. wickets_team1", "skor1 vs. skor2"),
+  Test_İstatistikleri = c(result1$statistic, result2$statistic),
+  P_Değeri = c(result1$p.value, result2$p.value)
+)
+
+kable(df, caption = "Korelasyon Test Sonuçları")
+
+
+
+```
+
+\newpage
+
+# Sonuç
+
+Sonuç olarak maçlardaki skorların eşit ağırlıklı yani normal olarak dağıldığını gördük. Shapiro normallik testiyle bunu bir daha doğruladık. Yıllar bazında ortalama skorlar açısından belirgin farklılık bulunmamaktadır. 
+
+Şekil \@ref(fig:plot1)`de de skorlar arasında bir aynı yönlü hareket olduğu görünüyor. Korelasyon testiyle de bu iki değişken arasında aynı anlamlı 0.58 oranlı korelasyon katsayısının olduğunu görüyoruz. Yani bir takımın yüksek(düşük) skor alması diğer takımın da aynı şekilde skorlar üretmesine tahrik ediyor. Ayrıca kaçırılan toplarla skor arasında negatif korelasyon da var. Bu iki korelasyonun P değerlerine bakılırsa istatistiksel  olarak da anlamlı olduğunu görüyoruz.
+
+Oyunların total skor açısında dağılımına baktığımızda genel olarak en çok yüzdeliği alan intervalin 400-500 sayı arasında ve median, ortalama değerler de bu intervale denk geliyor. Maksimum değere nazaran minimum değer olan 73 ve üstünün çok az olasılıkla gerçekleştiğini gördük. 
+
+Elimizdeki sayısal değerler az olduğundan kapsamlı istatistiki analiz gerçekleştirmek zor, detaylı süreler oyuncular hakkında özel bilgiler veriye ilave olunursa daha iyi sonuçlar alına bilir. Maç içi zamana göre veriler olursa, kaçılıran toplardan ve oyunculara göre oyunun skoru lineer regresyonla tahmin edilebilir.
+
+\newpage
+# Kaynakça {#references}
+<div id="refs"></div>
+

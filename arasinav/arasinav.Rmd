@@ -1,0 +1,101 @@
+---
+title: "Kriket Maçları 1997-2005 Sezonları Analizi"
+author: 
+  - Saida Meybaliyeva[^1]
+bibliography: ../bibliography/biblio.bib
+csl: ../csl/apa-tr.csl
+header-includes:
+  - \usepackage{polyglossia}
+  - \setmainlanguage{turkish}
+  - \usepackage{booktabs}
+  - \usepackage{caption} 
+  - \captionsetup[table]{skip=10pt}
+output:
+  bookdown::pdf_document2:
+    fig_caption: yes
+    fig_height: 3
+    fig_width: 4
+    keep_tex: no
+    latex_engine: xelatex
+    number_sections: yes
+    toc: no
+geometry: margin=1in
+link-citations: yes
+urlcolor: blue
+fontsize: 12pt
+biblio-style: apalike
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = FALSE, echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+<!-- ======================================================================= -->
+<!-- ============================== NOTLAR ================================= -->
+<!-- ======================================================================= -->
+[^1]: 20080742, [Github Repo](https://github.com/SeideMeybaliyeve/arasinav.git)
+
+
+
+# Giriş
+
+Kriket 16'cı yüzyılda İngilterede çıkan ve oradan dünyaya yayılan bir takım oyunudur. Şuanda Türkiyede pek oynanılmasa da eski İngiliz sömürgesi olan ülkelerde(Hindistan,Pakistan,Bangladeş) yaygın olarak oynanılmakta ve popülerliğini korumaktadır. Ofansif taraf fırlattığı topla savunma yapan oyuncunun arkasındaki kaleyi hedef alır(*Bowlers*) ve savunma yapan kişi topu arkasındaki kaleye değdirmeyecek şekilde elindeki sopayla savunmak zorundadır(*Batsmen*). Her takımda 11 kişi bulunur, top eğer kaleye değmediyse savunan taraf topa, topu savuran tarafın oyuncuları ise kaleye doğru koşarlar.
+
+Analizde kullanılacak data **Github** üzerinden **Tidytuesday** reposundan alınmıştır. Data 16 sütun ve 1237 satırdan oluşmaktadır. **Takım1** ve **Takım2** oyuncu takımların ülkelerini aynı şekilde **skor1 ve skor2** uygun gelen skorları, **zaman** maçın oynandığı zaman durumunu, **wicket_team1 ve 2** kaleden kenara giden top sayısını(10 olması tüm topların kenara gittiği anlamına geliyor),**takımsaha1 ve takımsaha2** maçın hangi takım sahasında oynandığını,**kazanan** sütunu hangi takımın kazandığını,**series** maçın oynandığı turnuvanı, **player_of_match ve player_of_match_team** maçın oyuncusunu ve bu oyuncunun hangi takımda olduğunu, **toss ve toss_decision** sütünları yazı-turanı hangi takımın kazandığını ve neyi seçtiğini, **match_date** ise maçın oynanma zamanını gösteriyor.
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(dplyr)
+data <- read_csv('../data/matches.csv')
+data <- data[ , ! names(data) %in% c("match_id", "venue", 'ball_remaining', 'ground','ground_city', 'ground_country', 'margin', 'margin_type')] 
+colnames(data)[colnames(data) == "team1"] = "takım1"
+colnames(data)[colnames(data) == "team2"] = "takım2"
+colnames(data)[colnames(data) == "score_team1"] = "skor1"
+colnames(data)[colnames(data) == "score_team2"] = "skor2"
+colnames(data)[colnames(data) == "time_of_day"] = "zaman"
+colnames(data)[colnames(data) == "team1_away_or_home"] = "takımsaha1"
+colnames(data)[colnames(data) == "team2_home_away"] = "takımsaha2"
+
+colnames(data)[colnames(data) == "winner"] = "kazanan"
+
+data <- mutate(data, takımsaha1 = case_when(
+  takımsaha1 == 'away' ~ 'deplasman', 
+  TRUE   ~ takımsaha1 
+))
+data <- mutate(data, takımsaha2 = case_when(
+  takımsaha2 == 'away' ~ 'deplasman', 
+  TRUE   ~ takımsaha2 
+))
+
+data <- mutate(data, takımsaha1 = case_when(
+  takımsaha1 == 'home' ~ 'ev', 
+  TRUE   ~ takımsaha1 
+))
+data <- mutate(data, takımsaha2 = case_when(
+  takımsaha2 == 'home' ~ 'ev', 
+  TRUE   ~ takımsaha2 
+))
+
+summary(data)
+# Türkiyede konu ile alakalı pek makale bulamadığım için literatür tartışması sadece ingiliz kaynaklı makalelerden yapılmıştır.
+
+```
+
+
+
+## Çalışmanın Amacı
+
+Çalışmada veride olan sezonlar için genel analiz yapmak amaçlanıyor. Genel olarak zaman içerisinde hangi takımların yükseldiğini, düştüğünü veya stabil oynadığını, sezonlar için en iyi oyuncu, ortalama skorlarda yıllara göre bir değişiklik olup olmadığı gözlemlenecektir. Maçı hangi takımın kazanacağına en çok etki eden etkenlerin hangi sütunlar olduğu da regresyon ve korelasyon analizi ile incelenecektir. Tabii ki, elimizde olan data kapsamlı bir regresyon analizi için yetersizdir, çünkü oyuncuların genel bilgileri olmadan bir tahmin yapmak pek olası değildir, ancak yine de tahminler oyuncuların durumlarının değişmediğine göre yapılacaktır.
+
+## Literatür 
+
+Genel olarak ülkemizde ve yakın ülkelerde pek çok bilinmese de, kriket oyunu 18'ci yy'dan beri daha da yaygınlaşmıştır ve popülerliğini korumaktadır. İngileterede 2'ci meşhur spor olsa da Amerikan futbolu sayılan rugby'den 2 kat ve baseball'dan 1.3 kat daha fazla popülerdir, 5 yetişkinden biri düzenli olarak kriket seyretmekte ve 10 yetişkinden biri oyunlarla alakalı yazılar okumaktadır[@lemmer2008]. Bu oyunun bu kadar çok popüler olmasına rağmen son 10 yıldır diğer sporlara nazaran daha çok araştırmalara konu olmaktadır.
+@amin2014cricket araştırmasında oyunlar incelendiğinde maç yerinin ve oynandığı turnuvanın kazanma oranına göre takımlar için farklılığa yol açtığı bulunmuştur. Araştırmamızda bu etkenlere diğer etkenler de katılacak şekilde analiz yapılacaktır. Bunlar önemli etken olsalar da takım oyuncularının skora katkısı tartışılmaz şekilde en yüksek olandır. Ancak yine oyuncular da bir çok özelliğe göre farklılık göstermektedir.
+Genel olarak oyuncuların eski performanslarına göre onların diğer oyunda hangi düzeyde iyi veya kötü oynayacağını tahmin edilirken öznel tam olarak anlamlı olmayan sonuçlarla karşılaşılıyor[@iyer2009prediction]. Top savurma konusunda bile bir oyuncu hedef konusunda iyi olurken, bir diğeri hıza göre en iyi olabiliyor, yani takım isteklerine ve pozisyonlara göre iyi oyuncular vardır tam olarak en iyi oyuncu diye bir kavram yoktur ki, bu da kriket sporununu heyecanlı kılmaktadır[@mukherjee2014quantifying]. @singh2015score araştırmasında kazanan takımı tahmin etmek için *lineer regresyon* kullanılmıştır. %91 güven düzeyinde kazanan takımın mevcüt skor ve verimizde bulunan **wicket team** sütunlarıyla orantılı olduğu bulunmuştur.
+Genel olarak bakıldığında bu özelliğin diğer popüler olan sporlarda da bulunuyor. Hatta bir çok spor bunu korumak için gerekli önlemler alıyor. Formula 1'i son yıllarda Mercedes takımının daha çok para harcayarak domine etmesinden dolayı federasyonun dominasyonu kırmak için harcanan paraya bir kota konulmasını bir örnek olarak vere biliriz. 
+
+\newpage
+
+# Kaynakça {#references}
+<div id="refs"></div>
+
